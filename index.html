@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Nine Grid · Sudoku</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb" id="themeColorMeta">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nine Grid">
 <style>
   :root {
     --bg: #f3f4f6; --panel: #ffffff; --grid-line: #cbd5e1; --grid-bold: #334155;
@@ -718,7 +726,7 @@
   function newGame(diff) {
     hideModal();
     state = freshState(diff);
-    document.documentElement.dataset.theme = state.theme;
+    applyTheme(state.theme);
     render();
     save();
     startTimer();
@@ -731,15 +739,21 @@
       autoCheck: d.autoCheck, notesMode: d.notesMode, theme: d.theme, elapsed: d.elapsed,
       running: d.running !== false, history: []
     };
-    document.documentElement.dataset.theme = d.theme || 'light';
+    applyTheme(d.theme || 'light');
     render();
     if (state.running) startTimer(); else stopTimer();
   }
 
   // ---------- 主题 ----------
+  const THEME_BG = { light: '#f3f4f6', dark: '#0f172a', night: '#000000', sepia: '#f5ecd7' };
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const meta = document.getElementById('themeColorMeta');
+    if (meta) meta.setAttribute('content', THEME_BG[theme] || THEME_BG.light);
+  }
   function setTheme(t) {
     state.theme = t;
-    document.documentElement.dataset.theme = t;
+    applyTheme(t);
     render(); save();
   }
 
@@ -804,6 +818,13 @@
       toast(t('toastLoaded'));
     } else {
       newGame('easy');
+    }
+
+    // PWA：注册 Service Worker（离线可玩 + 可安装到主屏幕）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+      });
     }
   }
 

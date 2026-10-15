@@ -32,12 +32,21 @@
 ## 当前文件结构
 ```
 sudoku-replica/
-├── index.html          # 主界面（含双语+Ask Anna）
-├── sudoku-core.js      # 核心算法
-├── netlify.toml        # Netlify 配置
-├── .github/workflows/  # GitHub Actions 配置
-└── DEPLOY.md           # 本说明文件
+├── index.html              # 主界面（双语 + Ask Anna + PWA 注册）
+├── sudoku-core.js          # 核心算法
+├── manifest.webmanifest    # PWA 清单（安装到主屏幕的配置）
+├── service-worker.js       # 离线缓存（版本号 ninegrid-v1，更新内容时改 v2）
+├── icon-512.png / icon-192.png / apple-touch-icon.png / favicon-32.png  # 图标（源：icon.svg）
+├── netlify.toml            # Netlify 配置
+├── .github/workflows/      # GitHub Actions 配置
+└── DEPLOY.md               # 本说明文件
 ```
+
+## PWA 说明
+- **安装**：Android Chrome / iOS Safari 打开线上链接 →「添加到主屏幕」→ 全屏独立 app 运行
+- **离线**：首次打开后全部资源缓存，之后断网可玩（进度存在 localStorage，不受影响）
+- **范围**：PWA 功能（安装 + 离线）只在 HTTPS 部署（GitHub Pages / Netlify）生效；本地 file:// 直接打开 index.html 时游戏正常，只是不安装不缓存
+- **更新缓存**：改了游戏内容后，把 `service-worker.js` 里的 `ninegrid-v1` 改成 `v2` 再部署，老用户下次打开自动刷新
 
 ## 功能说明
 - 6 档难度：Fast/Easy/Medium/Hard/Expert/Giant
