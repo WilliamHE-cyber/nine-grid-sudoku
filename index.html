@@ -165,11 +165,15 @@
     display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
   }
   .modal.anna-mode .cta-btn {
-    padding: 8px 16px; border-radius: 20px;
-    background: var(--btn); color: var(--btn-text);
-    font-size: 12px; font-weight: 600; cursor: pointer;
-    text-decoration: none; display: inline-block;
+    display: inline-block;
+    padding: 12px 22px; border-radius: 24px;
+    background: var(--accent); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    transition: transform .1s, box-shadow .1s;
   }
+  .modal.anna-mode .cta-btn:active { transform: scale(.96); box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25); }
 </style>
 </head>
 <body>
@@ -259,9 +263,7 @@
       threeMistakesBody: 'Stuck? Anna can give you a hint!',
       askAnnaBtn: 'Ask Anna',
       askAnnaCTA: 'Want Anna to remember everything about you? Download her app!',
-      askAnnaCTAZH: '想让 Anna 记住关于你的一切吗？下载她的 App！',
-      downloadGooglePlay: 'Download on Google Play',
-      downloadAppStore: 'Download on App Store',
+      downloadApp: 'Open Anna Memory',
       quitBtn: 'Give Up',
       gameOverTitle: '💀 Game Over',
       gameOverBody: 'Out of second chances. Try again!',
@@ -298,9 +300,7 @@
       threeMistakesBody: '卡住了？让 Anna 给你一些提示吧！',
       askAnnaBtn: 'Ask Anna',
       askAnnaCTA: '想让 Anna 记住关于你的一切吗？下载她的 App！',
-      askAnnaCTAZH: 'Want Anna to remember everything about you? Download her app!',
-      downloadGooglePlay: 'Download on Google Play',
-      downloadAppStore: 'Download on App Store',
+      downloadApp: '打开安娜记忆',
       quitBtn: '放弃，新游戏',
       gameOverTitle: '💀 游戏结束',
       gameOverBody: '容错已用完。正确率需要再练练～',
@@ -690,10 +690,9 @@
       const ctaDiv = document.createElement('div');
       ctaDiv.className = 'cta-section';
       ctaDiv.innerHTML = `
-        <p class="cta-text">${lang === 'zh' ? t('askAnnaCTAZH') : t('askAnnaCTA')}</p>
+        <p class="cta-text">${t('askAnnaCTA')}</p>
         <div class="cta-buttons">
-          <a href="https://play.google.com/store/apps/details?id=space.awares.anna" target="_blank" class="cta-btn" onclick="event.stopPropagation()">📱 ${t('downloadGooglePlay')}</a>
-          <a href="https://awares.space" target="_blank" class="cta-btn" onclick="event.stopPropagation()">🌐 ${t('downloadAppStore')}</a>
+          <a href="https://anna-memory.net2gobal.com" target="_blank" rel="noopener" class="cta-btn">🌐 ${t('downloadApp')} →</a>
         </div>
       `;
       wrap.appendChild(ctaDiv);
