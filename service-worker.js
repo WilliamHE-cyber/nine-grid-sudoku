@@ -1,5 +1,5 @@
 /* Nine Grid Service Worker — 离线缓存 + 后台更新 */
-const CACHE = 'ninegrid-v1';
+const CACHE = 'ninegrid-v2';
 const ASSETS = [
   './',
   './index.html',

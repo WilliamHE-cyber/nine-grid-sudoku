@@ -84,7 +84,7 @@
   .cell {
     position: relative; background: var(--panel); border: 1px solid var(--grid-line);
     display: flex; align-items: center; justify-content: center;
-    font-size: clamp(18px, 6vw, 28px); font-weight: 600; cursor: pointer;
+    font-size: clamp(22px, 7vw, 34px); font-weight: 600; cursor: pointer;
   }
   /* 3x3 宫的粗分隔线 */
   .cell[data-c="2"], .cell[data-c="5"] { border-right: 2px solid var(--grid-bold); }
@@ -108,12 +108,24 @@
   .cell.has-notes:not(.given):not(.error) { background: rgba(148, 163, 184, 0.12); }
   .cell .notes span { display: flex; align-items: center; justify-content: center; }
 
+  /* 行/列/宫完成奖励闪烁 */
+  @keyframes lineFlash {
+    0%   { box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 22px rgba(37, 99, 235, .55); }
+    50%  { box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .35); }
+    100% { box-shadow: inset 0 0 0 0 rgba(37, 99, 235, 0); }
+  }
+  .cell.flash { animation: lineFlash .45s ease-out 2; }
+
   .pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-top: 10px; }
   .pad button {
     padding: 14px 0; border: none; border-radius: 10px; background: var(--btn);
-    color: var(--btn-text); font-size: 20px; font-weight: 700; cursor: pointer;
+    color: var(--btn-text); font-size: clamp(22px, 7vw, 34px); font-weight: 700; cursor: pointer;
+    transition: opacity .3s ease, transform .3s ease;
   }
   .pad button:active { transform: scale(.96); }
+  .pad button.done {
+    opacity: 0; transform: scale(.7); pointer-events: none;
+  }
 
   .tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .tools button {
@@ -325,6 +337,8 @@
   let state = null;
   let cellEls = [];
   let timerId = null;
+  let padBtns = [];
+  let lineDone = { rows: new Array(9).fill(false), cols: new Array(9).fill(false), boxes: new Array(9).fill(false) };
 
   function t(key) { return I18N[lang][key] || key; }
 
@@ -373,11 +387,14 @@
   function buildPad() {
     const pad = document.getElementById('pad');
     pad.innerHTML = '';
+    padBtns = [];
     for (let n = 1; n <= 9; n++) {
       const b = document.createElement('button');
       b.textContent = n;
+      b.dataset.n = n;
       b.addEventListener('click', () => enterNumber(n));
       pad.appendChild(b);
+      padBtns.push(b);
     }
   }
 
@@ -424,6 +441,60 @@
       const key = el.dataset.i18n;
       if (I18N[lang][key]) el.textContent = I18N[lang][key];
     });
+  }
+
+  // ---------- 数字完成态 / 行·列·宫完成闪烁 ----------
+  // 数字 n 是否已在盘面正确填满 9 个（solution 中所有 n 的位置都已填入）
+  function isNumberComplete(n) {
+    for (let i = 0; i < 81; i++) {
+      if (state.solution[i] === n && state.grid[i] !== n) return false;
+    }
+    return true;
+  }
+
+  function refreshPad() {
+    for (let n = 1; n <= 9; n++) {
+      padBtns[n - 1].classList.toggle('done', isNumberComplete(n));
+    }
+  }
+
+  function lineIndex(kind, idx, k) {
+    if (kind === 'row') return idx * 9 + k;
+    if (kind === 'col') return k * 9 + idx;
+    const br = Math.floor(idx / 3) * 3, bc = (idx % 3) * 3;
+    return (br + Math.floor(k / 3)) * 9 + (bc + (k % 3));
+  }
+
+  function isLineComplete(kind, idx) {
+    for (let k = 0; k < 9; k++) {
+      const i = lineIndex(kind, idx, k);
+      if (state.grid[i] === 0 || state.grid[i] !== state.solution[i]) return false;
+    }
+    return true;
+  }
+
+  function flashLine(kind, idx) {
+    for (let k = 0; k < 9; k++) {
+      const el = cellEls[lineIndex(kind, idx, k)];
+      el.classList.remove('flash');
+      void el.offsetWidth; // 强制 reflow，允许连续重复触发动画
+      el.classList.add('flash');
+    }
+  }
+
+  // 全量重算 27 条线（9行+9列+9宫）的完成状态，仅在「新完成」时闪烁
+  function refreshCompletions(flash = true) {
+    for (let i = 0; i < 9; i++) {
+      const r = isLineComplete('row', i);
+      if (r && !lineDone.rows[i] && flash) flashLine('row', i);
+      lineDone.rows[i] = r;
+      const c = isLineComplete('col', i);
+      if (c && !lineDone.cols[i] && flash) flashLine('col', i);
+      lineDone.cols[i] = c;
+      const b = isLineComplete('box', i);
+      if (b && !lineDone.boxes[i] && flash) flashLine('box', i);
+      lineDone.boxes[i] = b;
+    }
   }
 
   function render() {
@@ -487,6 +558,7 @@
       (lang === 'zh' ? '🔍 自动' : '🔍 Auto') + (state.autoCheck ? (lang === 'zh' ? ' ✓' : ' ✓') : '');
     Array.from(document.getElementById('themes').children).forEach((b) =>
       b.classList.toggle('on', b.dataset.theme === state.theme));
+    refreshPad();
   }
 
   function fmtTime(s) {
@@ -537,12 +609,14 @@
       state.notes[i] = new Array(10).fill(false);
       clearPeersNotes(i, n); // 笔记自动更新
       render(); save();
+      refreshCompletions();
       checkWin();
     } else {
       state.grid[i] = n; // 保留玩家输入，便于擦除
       state.notes[i] = new Array(10).fill(false);
       state.mistakes++;
       render(); save();
+      refreshCompletions();
       // 当尝试次数达到 3 次，触发 "Ask Anna" 机制
       if (state.mistakes >= 3) askAnnaHint();
     }
@@ -556,6 +630,7 @@
     state.grid[i] = 0;
     state.notes[i] = new Array(10).fill(false);
     render(); save();
+    refreshCompletions();
   }
 
   function undo() {
@@ -563,6 +638,7 @@
     const h = state.history.pop();
     state.grid = h.grid; state.notes = h.notes; state.mistakes = h.mistakes;
     render(); save();
+    refreshCompletions();
   }
 
   function useHint() {
@@ -583,6 +659,7 @@
     state.notes[i] = new Array(10).fill(false);
     clearPeersNotes(i, correct);
     render(); save();
+    refreshCompletions();
     toast(t('askAnnaGreeting') + ' ' + msg);
     checkWin();
   }
@@ -636,6 +713,7 @@
         state.notes[bestCell] = new Array(10).fill(false);
         clearPeersNotes(bestCell, correct);
         render(); save();
+        refreshCompletions();
         checkWin();
       }}
     ], true, true); // Anna 模式 + 带 CTA
@@ -726,6 +804,7 @@
   function newGame(diff) {
     hideModal();
     state = freshState(diff);
+    lineDone = { rows: new Array(9).fill(false), cols: new Array(9).fill(false), boxes: new Array(9).fill(false) };
     applyTheme(state.theme);
     render();
     save();
@@ -741,6 +820,7 @@
     };
     applyTheme(d.theme || 'light');
     render();
+    refreshCompletions(false); // 静默重建完成状态，载入时不闪烁
     if (state.running) startTimer(); else stopTimer();
   }
 
