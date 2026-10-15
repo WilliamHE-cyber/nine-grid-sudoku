@@ -9,15 +9,18 @@
 4. 把 `sudoku-replica` 文件夹拖进去
 5. 等待几秒，自动生成链接
 
-### 方法 2：连接 GitHub（自动部署）
-1. 登录 Netlify → "Add new site" → "Import an existing project"
-2. 选择 GitHub
-3. 找到 `WilliamHE-cyber/nine-grid-sudoku` 仓库
-4. 点击 "Deploy site"
-5. 设置：
-   - Build command: `echo "No build needed"`
-   - Publish directory: `.`
-6. 点击 "Deploy nine-grid-sudoku"
+### 方法 2：连接 GitHub（自动部署，推荐）
+> 项目已含 `netlify.toml`，Netlify 会自动读取构建配置，无需手动填。
+
+1. 登录 https://app.netlify.com
+2. 点击 **"Add new site" → "Import an existing project"**
+3. 选择 **GitHub**，首次需授权 Netlify 访问你的 GitHub 账号
+4. 在仓库列表搜索并选择 **`WilliamHE-cyber/nine-grid-sudoku`**
+5. Netlify 自动识别 `netlify.toml`，构建命令和发布目录已自动填好（Build command 留空即可，Publish directory 为 `.`）
+6. 点击 **"Deploy nine-grid-sudoku"**
+7. 构建完成后生成链接，形如 `https://<随机名>.netlify.app`
+
+之后每次 `git push` 到 master，Netlify 会自动重新部署（CI/CD）。
 
 ### 自定义域名（可选）
 1. 部署完成后，进入站点设置
