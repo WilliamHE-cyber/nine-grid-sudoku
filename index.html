@@ -145,6 +145,31 @@
     background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
   }
   .modal .box button.ghost { background: var(--btn); color: var(--btn-text); }
+
+  /* Anna 提示弹窗特殊样式 */
+  .modal.anna-mode .box {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+  }
+  .modal.anna-mode .box h2 { color: var(--accent); }
+  .modal.anna-mode .cta-section {
+    margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid var(--grid-line);
+    text-align: center;
+  }
+  .modal.anna-mode .cta-text {
+    font-size: 13px; color: var(--muted);
+    margin-bottom: 12px; line-height: 1.5;
+  }
+  .modal.anna-mode .cta-buttons {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+  }
+  .modal.anna-mode .cta-btn {
+    padding: 8px 16px; border-radius: 20px;
+    background: var(--btn); color: var(--btn-text);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    text-decoration: none; display: inline-block;
+  }
 </style>
 </head>
 <body>
@@ -159,7 +184,7 @@
 
   <div class="hud">
     <div class="stat">⏱ <b id="timer">00:00</b></div>
-    <div class="stat mistakes" id="mistakesBox">❌ <span data-i18n="mistakes">Mistakes</span> <b id="mistakes">0</b>/3</div>
+    <div class="stat" id="mistakesBox">🧠 <span data-i18n="mistakes">Attempts</span> <b id="mistakes">0</b></div>
     <div class="stat" id="diffLabel"><span data-i18n="difficulty">Difficulty</span> <b>Easy</b></div>
   </div>
 
@@ -211,7 +236,7 @@
     en: {
       title: 'Nine Grid',
       sub: 'Each puzzle has one solution',
-      mistakes: 'Mistakes',
+      mistakes: 'Attempts',
       difficulty: 'Difficulty',
       undo: 'Undo',
       erase: 'Erase',
@@ -228,24 +253,29 @@
       toastLang: 'Language: English',
       toastLoaded: 'Resumed previous game',
       winTitle: '🎉 Completed!',
-      winBody: 'Difficulty: %d · Time: %t · Mistakes: %m',
+      winBody: 'Difficulty: %d · Time: %t · Attempts: %m',
       winBtn: 'Play Again',
-      threeMistakesTitle: '😵 3 Mistakes!',
-      threeMistakesBody: 'No more errors allowed. Use Second Chance?',
-      secondChanceBtn: 'Second Chance',
+      threeMistakesTitle: '🤔 Ask Anna?',
+      threeMistakesBody: 'Stuck? Anna can give you a hint!',
+      askAnnaBtn: 'Ask Anna',
+      askAnnaCTA: 'Want Anna to remember everything about you? Download her app!',
+      askAnnaCTAZH: '想让 Anna 记住关于你的一切吗？下载她的 App！',
+      downloadGooglePlay: 'Download on Google Play',
+      downloadAppStore: 'Download on App Store',
       quitBtn: 'Give Up',
       gameOverTitle: '💀 Game Over',
       gameOverBody: 'Out of second chances. Try again!',
       gameOverBtn: 'New Game',
       noHistory: 'Nothing to undo',
       noHints: 'Board is complete',
+      askAnnaGreeting: '💡 Anna says:',
       hintUnique: 'Hidden Single: Only %n can go here after elimination.',
       hintElimination: 'Elimination: This cell must be %n based on row/column/box.',
     },
     zh: {
       title: '九宫数独',
       sub: '每题唯一解',
-      mistakes: '错误',
+      mistakes: '尝试',
       difficulty: '难度',
       undo: '撤销',
       erase: '橡皮擦',
@@ -262,17 +292,22 @@
       toastLang: '语言：中文',
       toastLoaded: '已恢复上次未完成的对局',
       winTitle: '🎉 完成！',
-      winBody: '难度：%d · 用时：%t · 错误：%m 次',
+      winBody: '难度：%d · 用时：%t · 尝试：%m 次',
       winBtn: '再来一局',
-      threeMistakesTitle: '😵 3 次错误',
-      threeMistakesBody: '你已用尽本局容错。是否使用第二次机会续命？',
-      secondChanceBtn: '第二次机会',
+      threeMistakesTitle: '🤔 请教 Anna？',
+      threeMistakesBody: '卡住了？让 Anna 给你一些提示吧！',
+      askAnnaBtn: 'Ask Anna',
+      askAnnaCTA: '想让 Anna 记住关于你的一切吗？下载她的 App！',
+      askAnnaCTAZH: 'Want Anna to remember everything about you? Download her app!',
+      downloadGooglePlay: 'Download on Google Play',
+      downloadAppStore: 'Download on App Store',
       quitBtn: '放弃，新游戏',
       gameOverTitle: '💀 游戏结束',
       gameOverBody: '容错已用完。正确率需要再练练～',
       gameOverBtn: '新游戏',
       noHistory: '没有可撤销的步骤',
       noHints: '盘面已正确，无需提示',
+      askAnnaGreeting: '💡 Anna 说：',
       hintUnique: '唯一候选数法：这一格排除冲突后只剩 %n 一个可能值。',
       hintElimination: '排除法：观察所在行/列/宫已出现的数字，此格只能是 %n。',
     }
@@ -431,7 +466,6 @@
 
     document.getElementById('timer').textContent = fmtTime(state.elapsed);
     document.getElementById('mistakes').textContent = state.mistakes;
-    document.getElementById('mistakesBox').classList.toggle('bad', state.mistakes >= 2);
     document.getElementById('diffLabel').innerHTML =
       '<span data-i18n="difficulty">' + t('difficulty') + '</span> <b>' + DIFF_LABELS[state.difficulty] + '</b>';
     Array.from(document.getElementById('diffbar').children).forEach((b) =>
@@ -501,7 +535,8 @@
       state.notes[i] = new Array(10).fill(false);
       state.mistakes++;
       render(); save();
-      if (state.mistakes >= 3) onThreeMistakes();
+      // 当尝试次数达到 3 次，触发 "Ask Anna" 机制
+      if (state.mistakes >= 3) askAnnaHint();
     }
   }
 
@@ -540,8 +575,62 @@
     state.notes[i] = new Array(10).fill(false);
     clearPeersNotes(i, correct);
     render(); save();
-    toast('💡 ' + msg);
+    toast(t('askAnnaGreeting') + ' ' + msg);
     checkWin();
+  }
+
+  // ---------- Ask Anna 机制 ----------
+  // 当玩家尝试次数达到 3 次，Anna 主动给出智能提示
+  function askAnnaHint() {
+    // 找一个最优提示位置（优先选只有唯一候选数的格子）
+    let bestCell = -1, bestCands = [];
+    for (let i = 0; i < 81; i++) {
+      if (state.puzzle[i] !== 0 || state.grid[i] !== 0) continue;
+      const cands = S.candidates(state.grid, i);
+      if (cands.length === 1) {
+        bestCell = i;
+        bestCands = cands;
+        break; // 找到唯一候选数格，直接退出
+      }
+      if (cands.length < bestCands.length && cands.length > 0) {
+        bestCell = i;
+        bestCands = cands;
+      }
+    }
+
+    if (bestCell < 0) {
+      // 盘面已满，可能已完成
+      checkWin();
+      return;
+    }
+
+    const correct = state.solution[bestCell];
+    const cands = S.candidates(state.grid, bestCell);
+
+    // Anna 的智能提示文案
+    let annaMsg;
+    if (cands.length === 1) {
+      annaMsg = lang === 'zh'
+        ? `我发现这一格（第${Math.floor(bestCell/9)+1}行第${bestCell%9+1}列）只有一个候选数 ${correct}，试试填入吧！`
+        : `I found a cell (row ${Math.floor(bestCell/9)+1}, col ${bestCell%9+1}) with only one candidate: ${correct}. Try it!`;
+    } else {
+      annaMsg = lang === 'zh'
+        ? `我在观察第${Math.floor(bestCell/9)+1}行第${bestCell%9+1}列，这里应该是 ${correct}。你可以用排除法验证一下。`
+        : `I'm looking at row ${Math.floor(bestCell/9)+1}, col ${bestCell%9+1}. The answer should be ${correct}. You can verify with elimination.`;
+    }
+
+    // 弹出示意弹窗，不自动填入
+    showModal(t('threeMistakesTitle'), annaMsg, [
+      { label: lang === 'zh' ? '知道了！' : 'Got it!', cb: () => hideModal() },
+      { label: lang === 'zh' ? '直接填入' : 'Fill It', ghost: true, cb: () => {
+        pushHistory();
+        state.grid[bestCell] = correct;
+        state.notes[bestCell] = new Array(10).fill(false);
+        clearPeersNotes(bestCell, correct);
+        render(); save();
+        checkWin();
+      }}
+    ], true, true); // Anna 模式 + 带 CTA
   }
 
   function checkWin() {
@@ -556,25 +645,6 @@
       .replace('%m', state.mistakes),
       [{ label: t('winBtn'), cb: () => newGame(state.difficulty) }]
     );
-  }
-
-  function onThreeMistakes() {
-    state.running = false; stopTimer();
-    if (!state.secondChanceUsed) {
-      showModal(t('threeMistakesTitle'), t('threeMistakesBody'),
-        [
-          { label: t('secondChanceBtn'), cb: () => {
-            state.secondChanceUsed = true; state.mistakes = 0; state.running = true;
-            hideModal(); startTimer(); render(); save();
-          } },
-          { label: t('quitBtn'), ghost: true, cb: () => newGame(state.difficulty) }
-        ]
-      );
-    } else {
-      showModal(t('gameOverTitle'), t('gameOverBody'),
-        [{ label: t('gameOverBtn'), cb: () => newGame(state.difficulty) }]
-      );
-    }
   }
 
   // ---------- 存档 ----------
@@ -603,7 +673,7 @@
   function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 
   // ---------- 弹窗 / Toast ----------
-  function showModal(title, body, btns) {
+  function showModal(title, body, btns, isAnnaMode = false, withCTA = false) {
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').textContent = body;
     const wrap = document.getElementById('modalBtns');
@@ -615,9 +685,27 @@
       el.addEventListener('click', b.cb);
       wrap.appendChild(el);
     });
-    document.getElementById('modal').classList.add('show');
+    // 添加 CTA 区域
+    if (withCTA) {
+      const ctaDiv = document.createElement('div');
+      ctaDiv.className = 'cta-section';
+      ctaDiv.innerHTML = `
+        <p class="cta-text">${lang === 'zh' ? t('askAnnaCTAZH') : t('askAnnaCTA')}</p>
+        <div class="cta-buttons">
+          <a href="https://play.google.com/store/apps/details?id=space.awares.anna" target="_blank" class="cta-btn" onclick="event.stopPropagation()">📱 ${t('downloadGooglePlay')}</a>
+          <a href="https://awares.space" target="_blank" class="cta-btn" onclick="event.stopPropagation()">🌐 ${t('downloadAppStore')}</a>
+        </div>
+      `;
+      wrap.appendChild(ctaDiv);
+    }
+    const modal = document.getElementById('modal');
+    modal.classList.toggle('anna-mode', isAnnaMode);
+    modal.classList.add('show');
   }
-  function hideModal() { document.getElementById('modal').classList.remove('show'); }
+  function hideModal() {
+    const modal = document.getElementById('modal');
+    modal.classList.remove('show', 'anna-mode');
+  }
 
   let toastTimer = null;
   function toast(msg) {
